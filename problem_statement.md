@@ -79,37 +79,41 @@ The Central Library wants to manage book lending and cultural events.
 
 ### Entities and Attributes
 
-| Entity    | Attributes (PK, FK)                                   | Notes                                  |
-| --------- | ----------------------------------------------------- | -------------------------------------- |
-| Customer  | CustomerID (PK), Name, Phone, Email                   | Stores details of customers            |
-| MenuItem  | ItemID (PK), Name, Price, Category                    | Food and drinks offered                |
-| Order     | OrderID (PK), OrderDate, CustomerID (FK), TotalAmount | Represents a customer’s order          |
-| OrderItem | OrderItemID (PK), OrderID (FK), ItemID (FK), Quantity | Junction table for M\:N Order–MenuItem |
-| Staff     | StaffID (PK), Name, Role                              | Waiter, Chef, Cashier, etc.            |
-| Payment   | PaymentID (PK), OrderID (FK), Amount, Date, Mode      | Payment for the order                  |
+| Entity       | Attributes (PK, FK)                                                 | Notes                             |
+| ------------ | ------------------------------------------------------------------- | --------------------------------- |
+| Member       | MemberID (PK), Name, Email, Phone                                   | Library members                   |
+| Book         | BookID (PK), Title, Author, Category                                | Books available in the library    |
+| Loan         | LoanID (PK), MemberID (FK), BookID (FK), LoanDate, ReturnDate, Fine | Tracks lending/return of books    |
+| Event        | EventID (PK), Title, Date, RoomID (FK)                              | Library cultural events           |
+| Speaker      | SpeakerID (PK), Name, Topic                                         | Guest speakers/authors for events |
+| Room         | RoomID (PK), RoomName, Capacity                                     | Rooms for events and study        |
+| Registration | RegID (PK), EventID (FK), MemberID (FK)                             | Members registering for events    |
+
 
 
 ### Relationships and Constraints
 
-| Relationship | Entities                         | Cardinality | Participation       | Notes                                     |
-| ------------ | -------------------------------- | ----------- | ------------------- | ----------------------------------------- |
-| Places       | Customer ↔ Order                 | 1\:M        | Total on Order side | Each customer can place many orders       |
-| Contains     | Order ↔ MenuItem (via OrderItem) | M\:N        | Total on OrderItem  | Orders include multiple menu items        |
-| ServedBy     | Order ↔ Staff                    | M\:N        | Partial             | An order may be handled by multiple staff |
-| Pays         | Customer ↔ Payment               | 1\:M        | Total on Payment    | Customers make payments for orders        |
+| Relationship | Entities                          | Cardinality | Participation         | Notes                                              |
+| ------------ | --------------------------------- | ----------- | --------------------- | -------------------------------------------------- |
+| Borrows      | Member ↔ Book (via Loan)          | M\:N        | Total on Loan         | A member can borrow many books; tracked with dates |
+| RegistersFor | Member ↔ Event (via Registration) | M\:N        | Total on Registration | Members can register for multiple events           |
+| HostedIn     | Event ↔ Room                      | M:1         | Total on Event        | Each event must be held in one room                |
+| HasSpeaker   | Event ↔ Speaker                   | M\:N        | Partial               | Events may have multiple speakers                  |
+| FineApplied  | Loan ↔ Member                     | 1\:M        | Partial               | Overdue fines applied to member if late return     |
+
 
 
 ### Assumptions
 
-1. A customer must place at least one order to exist in the system.
+1. A member must exist before borrowing a book or registering for an event.
 
-2. Each order is linked to one customer but can include many items.
+2. A book can only be borrowed by one member at a time.
 
-3. Staff roles may overlap (e.g., same staff can serve and also prepare).
+3. Every event must be hosted in exactly one room.
 
-4. Payments are always tied to an order.
+4. Events may have zero or multiple speakers.
 
-5. Menu items may exist without being ordered yet.
+5. Overdue fines are calculated and stored in Loan.
 
 ---
 
@@ -131,35 +135,43 @@ A popular restaurant wants to manage reservations, orders, and billing.
 
 ### Entities and Attributes
 
-| Entity     | Attributes (PK, FK)                                     | Notes                              |
-| ---------- | ------------------------------------------------------- | ---------------------------------- |
-| Student    | StudentID (PK), Name, Major, Year                       | Stores student info                |
-| Course     | CourseID (PK), CourseName, Credits                      | Courses offered by the university  |
-| Professor  | ProfessorID (PK), Name, Department                      | Professors who teach courses       |
-| Enrollment | EnrollmentID (PK), StudentID (FK), CourseID (FK), Grade | Junction entity for Student–Course |
-| Department | DeptID (PK), DeptName                                   | University departments             |
+| Entity      | Attributes (PK, FK)                                           | Notes                               |
+| ----------- | ------------------------------------------------------------- | ----------------------------------- |
+| Customer    | CustomerID (PK), Name, Phone, Email                           | Restaurant customers                |
+| Reservation | ResID (PK), CustomerID (FK), Date, Time, Guests, TableID (FK) | Reservations or walk-ins            |
+| Table       | TableID (PK), Capacity                                        | Physical tables available           |
+| Order       | OrderID (PK), ResID (FK), OrderTime                           | Orders linked to reservations       |
+| Dish        | DishID (PK), Name, Category, Price                            | Menu items (starter, main, dessert) |
+| OrderItem   | OrderItemID (PK), OrderID (FK), DishID (FK), Quantity         | Tracks multiple dishes per order    |
+| Bill        | BillID (PK), ResID (FK), TotalAmount, ServiceCharge, Date     | Bill generated per reservation      |
+| Waiter      | WaiterID (PK), Name, Shift                                    | Waiters assigned to reservations    |
+
 
 
 ### Relationships and Constraints
 
-| Relationship | Entities                          | Cardinality | Participation       | Notes                                                        |
-| ------------ | --------------------------------- | ----------- | ------------------- | ------------------------------------------------------------ |
-| EnrollsIn    | Student ↔ Course (via Enrollment) | M\:N        | Total on Enrollment | Students can enroll in multiple courses                      |
-| Teaches      | Professor ↔ Course                | 1\:M        | Total on Course     | A professor can teach many courses, one professor per course |
-| BelongsTo    | Professor ↔ Department            | M\:N        | Partial             | Professors can belong to multiple departments                |
-| OfferedBy    | Course ↔ Department               | 1\:M        | Total on Course     | A course belongs to exactly one department                   |
+| Relationship | Entities                     | Cardinality | Participation        | Notes                                           |
+| ------------ | ---------------------------- | ----------- | -------------------- | ----------------------------------------------- |
+| Makes        | Customer ↔ Reservation       | 1\:M        | Total on Reservation | Customer can have multiple reservations         |
+| AssignedTo   | Reservation ↔ Table          | M:1         | Total on Reservation | Each reservation linked to one table            |
+| Places       | Reservation ↔ Order          | 1\:M        | Total on Order       | A reservation can have multiple orders          |
+| Contains     | Order ↔ Dish (via OrderItem) | M\:N        | Total on OrderItem   | Orders can contain multiple dishes              |
+| Generates    | Reservation ↔ Bill           | 1:1         | Total on Bill        | Each reservation produces one bill              |
+| ServedBy     | Reservation ↔ Waiter         | M\:N        | Partial              | A reservation can be served by multiple waiters |
 
 ### Assumptions
 
-1. Every student must be enrolled in at least one course.
+1. A customer must exist before making a reservation.
 
-2. Each course has exactly one primary professor.
+2. Walk-in customers are treated as reservations with immediate booking.
 
-3. Grades are assigned only after course completion.
+3. Each reservation is linked to exactly one table.
 
-4. A professor may belong to multiple departments (e.g., interdisciplinary roles).
+4. An order can only be placed after a reservation exists.
 
-5. Departments may exist even if they don’t currently offer courses.
+5. One bill is generated per reservation (covers food + service).
+
+6. A reservation can be served by one or more waiters.
 
 ---
 
